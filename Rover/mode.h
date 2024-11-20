@@ -92,10 +92,11 @@ public:
     virtual float wp_bearing() const;
     virtual float nav_bearing() const;
     virtual float crosstrack_error() const;
+    virtual float speed_error() const;
     virtual float get_desired_lat_accel() const;
 
     // get speed error in m/s, not currently supported
-    float speed_error() const { return 0.0f; }
+    //float speed_error() const { return 0.0f; }
 
     //
     // navigation methods
@@ -261,6 +262,7 @@ public:
     float wp_bearing() const override;
     float nav_bearing() const override;
     float crosstrack_error() const override;
+    float speed_error() const override;
     float get_desired_lat_accel() const override;
 
     // return distance (in meters) to destination
@@ -330,6 +332,7 @@ private:
 
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void do_RTL(void);
+    bool do_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
@@ -387,6 +390,13 @@ private:
     uint32_t nav_delay_time_max_ms;  // used for delaying the navigation commands
     uint32_t nav_delay_time_start_ms;
 
+    // Next navigation leg bearing in centi-degrees
+    float next_navigation_leg_cd;
+
+    // Previous navigation command
+    AP_Mission::Mission_Command prev_nav_cmd;
+    AP_Mission::Mission_Command anticipated_curr_nav_cmd;
+
 #if AP_SCRIPTING_ENABLED
     // nav_script_time command variables
     struct {
@@ -431,6 +441,7 @@ public:
     // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override;
     float nav_bearing() const override;
+    float speed_error() const override { return 0;}
     float crosstrack_error() const override { return dist_to_edge_m; }
     float get_desired_lat_accel() const override;
 
@@ -526,6 +537,7 @@ public:
     float wp_bearing() const override;
     float nav_bearing() const override;
     float crosstrack_error() const override;
+    float speed_error() const override { return 0;}
     float get_desired_lat_accel() const override;
 
     // return distance (in meters) to destination
@@ -645,6 +657,7 @@ public:
     float wp_bearing() const override { return _desired_yaw_cd * 0.01f; }
     float nav_bearing() const override { return _desired_yaw_cd * 0.01f; }
     float crosstrack_error() const override { return 0.0f; }
+    float speed_error() const override { return 0;}
 
     // return desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
@@ -828,6 +841,7 @@ public:
     float wp_bearing() const override;
     float nav_bearing() const override { return wp_bearing(); }
     float crosstrack_error() const override { return 0.0f; }
+    float speed_error() const override { return 0;}
 
     // return desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED { return false; }

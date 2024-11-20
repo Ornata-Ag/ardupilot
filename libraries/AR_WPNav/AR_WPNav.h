@@ -71,6 +71,8 @@ public:
     float wp_bearing_cd() const { return _wp_bearing_cd; }
     float nav_bearing_cd() const { return _desired_heading_cd; }
     float crosstrack_error() const { return _cross_track_error; }
+    float speed_error() const { return  degrees( _angle_error)*-10.0f;}
+    
 
     // get object avoidance adjusted origin. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     virtual const Location &get_oa_origin() const { return _origin; }
@@ -105,6 +107,9 @@ public:
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
+
+    AP_Float _speed_max;            // target speed between waypoints in m/s
+  
 
 protected:
 
@@ -142,7 +147,6 @@ protected:
     void update_speed_max();
 
     // parameters
-    AP_Float _speed_max;            // target speed between waypoints in m/s
     AP_Float _radius;               // distance in meters from a waypoint when we consider the waypoint has been reached
     AR_PivotTurn _pivot;            // pivot turn controller
     AP_Float _accel_max;            // max acceleration.  If zero then attitude controller's specified max accel is used
@@ -169,6 +173,7 @@ protected:
     Location _origin;               // origin Location (vehicle will travel from the origin to the destination)
     Location _destination;          // destination Location when in Guided_WP
     Location _next_destination;     // next destination Location when in Guided_WP
+    bool initialised = false;
     bool _orig_and_dest_valid;      // true if the origin and destination have been set
     bool _reversed;                 // execute the mission by backing up
     enum class NavControllerType {
@@ -188,6 +193,7 @@ protected:
     float _desired_heading_cd;      // desired heading (back towards line between origin and destination)
     float _wp_bearing_cd;           // heading to waypoint in centi-degrees
     float _cross_track_error;       // cross track error (in meters).  distance from current position to closest point on line between origin and destination
+    float _angle_error;
 
     // variables for reporting
     float _distance_to_destination; // distance from vehicle to final destination in meters
