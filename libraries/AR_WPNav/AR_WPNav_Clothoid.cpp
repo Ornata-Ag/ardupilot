@@ -560,38 +560,26 @@ void AR_WPNav_Clothoid::calculate_clothoid_parameters(const Location& prev_wp, c
     // calculate entry spiral start positions
     next_turn.entry_spiral_start = _curr_wp;
     next_turn.entry_spiral_start.offset_bearing(degrees(next_turn.entry_spiral_heading), -turn_start_distance);
-    
-    //calculate constant turn start position
-    float bearing_to_clothoid_point = tanf(y/x);
-    if (next_turn.total_turn_angle < 0) {
-        bearing_to_clothoid_point = -bearing_to_clothoid_point;
-    }
-    float distance_to_clothoid_point = sqrtf(x*x + y*y);
-    next_turn.constant_turn_start = next_turn.entry_spiral_start;
-    next_turn.constant_turn_start.offset_bearing(degrees(bearing_to_clothoid_point+next_turn.entry_spiral_heading), distance_to_clothoid_point);
 
-    //calculate exit spiral start position
-    next_turn.exit_spiral_start = _curr_wp;
-    next_turn.exit_spiral_start.offset_bearing(degrees(next_turn.turn_complete_heading), turn_start_distance);
-    next_turn.exit_spiral_start.offset_bearing(degrees(-bearing_to_clothoid_point+next_turn.turn_complete_heading), -distance_to_clothoid_point);
-
+    // calculate exit spiral end position
     next_turn.exit_spiral_end = _curr_wp;
     next_turn.exit_spiral_end.offset_bearing(degrees(next_turn.turn_complete_heading), turn_start_distance);
+    
+    //calculate constant turn start position (entry spiral end position)
+    next_turn.constant_turn_start = next_turn.entry_spiral_start;
+    next_turn.constant_turn_start.offset_bearing(degrees(next_turn.entry_spiral_heading), x);
+    next_turn.constant_turn_start.offset_bearing(degrees(next_turn.entry_spiral_heading + (next_turn.total_turn_angle > 0 ? M_PI_2 : -M_PI_2)), y);
 
 
-    Vector2f turn_center(_turn_radius, 0);
-    turn_center.rotate(next_turn.constant_turn_heading);
+    //calculate exit spiral start position (constant turn end position)
+    next_turn.exit_spiral_start = next_turn.exit_spiral_end;
+    next_turn.exit_spiral_start.offset_bearing(degrees(next_turn.turn_complete_heading - M_PI), x);
+    next_turn.exit_spiral_start.offset_bearing(degrees(next_turn.turn_complete_heading + (next_turn.total_turn_angle > 0 ? M_PI_2 : -M_PI_2)), y);
 
-
-    if (next_turn.total_turn_angle < 0) {
-        // right turn - center is to the right
-        turn_center.rotate(-M_PI_2);
-    } else {
-        // left turn - center is to the left
-        turn_center.rotate(M_PI_2);
-    }
-    next_turn.turn_centre = next_turn.constant_turn_start;
-    next_turn.turn_centre.offset(turn_center.x, turn_center.y);
+    // calculate turn centre  
+    float centre_bearing = next_turn.entry_spiral_heading + (next_turn.total_turn_angle > 0 ? clothoid_angle + M_PI_2 : -clothoid_angle - M_PI_2);
+    next_turn.turn_centre  = next_turn.constant_turn_start;
+    next_turn.turn_centre.offset_bearing(degrees(centre_bearing), _turn_radius);
 
     // _cross_track_error = calc_crosstrack_error_straight(current_loc);
     // _angle_error = wrap_PI(_current_track_heading - AP::ahrs().get_yaw());
