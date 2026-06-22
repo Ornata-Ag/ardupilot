@@ -27,6 +27,20 @@ extern const AP_HAL::HAL &hal;
 
 #define TUNNEL_LOCK_KEY 0xf2e460e4U
 
+// monitor ring-buffer size, and the rx/tx buffer sizes used when the port
+// is locked for tunnelling. The defaults are sized for a uBlox GPS firmware
+// update / fast u-center streaming. RAM-constrained boards (e.g. F103) can
+// override these to much smaller values via their hwdef.
+#ifndef HAL_PERIPH_TUNNEL_BUFFER_SIZE
+#define HAL_PERIPH_TUNNEL_BUFFER_SIZE 1024
+#endif
+#ifndef HAL_PERIPH_TUNNEL_UART_RXSIZE
+#define HAL_PERIPH_TUNNEL_UART_RXSIZE 2048
+#endif
+#ifndef HAL_PERIPH_TUNNEL_UART_TXSIZE
+#define HAL_PERIPH_TUNNEL_UART_TXSIZE 2048
+#endif
+
 #ifndef TUNNEL_DEBUG
 #define TUNNEL_DEBUG 0
 #endif
@@ -79,7 +93,7 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
         return;
     }
     if (uart_monitor.buffer == nullptr) {
-        uart_monitor.buffer = NEW_NOTHROW ByteBuffer(1024);
+        uart_monitor.buffer = NEW_NOTHROW ByteBuffer(HAL_PERIPH_TUNNEL_BUFFER_SIZE);
         if (uart_monitor.buffer == nullptr) {
             return;
         }
@@ -125,7 +139,7 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
     if (pkt.baudrate != uart_monitor.baudrate || !was_locked) {
         if (uart_monitor.locked && pkt.baudrate != 0) {
             // ensure we have enough buffer space for a uBlox fw update and fast uCenter data
-            uart_monitor.uart->begin_locked(pkt.baudrate, 2048, 2048, TUNNEL_LOCK_KEY);
+            uart_monitor.uart->begin_locked(pkt.baudrate, HAL_PERIPH_TUNNEL_UART_RXSIZE, HAL_PERIPH_TUNNEL_UART_TXSIZE, TUNNEL_LOCK_KEY);
             debug("begin_locked %u", unsigned(pkt.baudrate));
         }
         uart_monitor.baudrate = pkt.baudrate;

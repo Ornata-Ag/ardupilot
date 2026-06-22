@@ -99,7 +99,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Range: 10000 1000000
     // @User: Advanced
     // @RebootRequired: True
-    GARRAY(can_baudrate,     0, "CAN_BAUDRATE", 1000000),
+    GARRAY(can_baudrate,     0, "CAN_BAUDRATE", HAL_PERIPH_CAN_BAUDRATE_DEFAULT),
 
 #if AP_CAN_SLCAN_ENABLED
     // @Param: CAN_SLCAN_CPORT

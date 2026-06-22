@@ -1,0 +1,50 @@
+# hwdef for an F103 AP_Periph image whose only job is to tunnel serial
+# data over DroneCAN (serial-over-CAN passthrough).
+#
+# This builds on the minimal f103-periph base (CAN + USART1, no peripheral
+# drivers) and turns on the UART monitor that implements the DroneCAN
+# uavcan.tunnel.Targetted serial tunnel used by tools like u-center and
+# Mission Planner for serial passthrough / device firmware update.
+
+include ../f103-periph/hwdef.inc
+
+# Keep the same board ID as the standard f103-periph bootloader so this
+# firmware can be flashed over DroneCAN to existing generic F103 CAN nodes.
+# Change this only if your hardware runs a bootloader with a different
+# APJ_BOARD_ID (the firmware ID must match the bootloader's ID).
+APJ_BOARD_ID 1000
+
+# Enabling serial options also enables AP_UART_MONITOR_ENABLED (see
+# hwdef/scripts/defaults_periph.h), which compiles in serial_tunnel.cpp and
+# the UAVCAN_TUNNEL_TARGETTED handler in can.cpp. That is the whole
+# serial-over-CAN passthrough path.
+define AP_PERIPH_SERIAL_OPTIONS_ENABLED 1
+
+# Shrink the serial-over-CAN tunnel buffers. The defaults (1024 monitor +
+# 2048/2048 locked UART rx/tx = ~5KB of heap allocated when a tunnel starts)
+# overflow this F103's ~7KB heap and crash the node once traffic begins.
+# These smaller sizes are ample for modest serial at 115200 and cut the
+# runtime demand to ~1.3KB.
+define HAL_PERIPH_TUNNEL_BUFFER_SIZE 512
+define HAL_PERIPH_TUNNEL_UART_RXSIZE 256
+define HAL_PERIPH_TUNNEL_UART_TXSIZE 512
+
+# DroneCAN defaults for this node. These set the *default* value of the
+# CAN_NODE and CAN_BAUDRATE parameters (the F103 base disables embedded
+# defaults.parm via AP_PARAM_MAX_EMBEDDED_PARAM 0, so defaults are set in
+# the firmware here). Both remain user-settable over DroneCAN afterwards.
+#   CAN_NODE     -> 104
+#   CAN_BAUDRATE -> 250000 (250 kbit/s)
+define HAL_CAN_DEFAULT_NODE_ID 104
+define HAL_PERIPH_CAN_BAUDRATE_DEFAULT 250000
+
+# Expose both UARTs of the STM32F103CBT6 (LQFP48):
+#   USART1  PA9 / PA10  -> physical pins 30 / 31  -> SERIAL3
+#   USART2  PA2 / PA3   -> physical pins 12 / 13  -> SERIAL4
+# The base f103-periph.inc already declares the USART1 pins; we re-declare
+# SERIAL_ORDER here to append USART2 and add its pins below. NODMA matches
+# the base (HAL_UART_NODMA / DMA_RESERVE_SIZE 0).
+SERIAL_ORDER EMPTY EMPTY EMPTY USART1 USART2
+
+PA2 USART2_TX USART2 SPEED_HIGH NODMA
+PA3 USART2_RX USART2 SPEED_HIGH NODMA
