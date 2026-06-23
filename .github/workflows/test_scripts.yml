@@ -20,7 +20,7 @@ jobs:
             astyle-cleanliness,
             validate_board_list,
             logger_metadata,
-       ]
+        ]
     steps:
       # git checkout the PR
       - uses: actions/checkout@v4
