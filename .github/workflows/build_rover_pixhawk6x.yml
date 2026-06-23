@@ -1,0 +1,63 @@
+name: build rover Pixhawk6X
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-chibios:v0.1.3
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
+      - name: ccache cache files
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          . .github/workflows/ccache.env
+      - name: build ardurover Pixhawk6X
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:$PATH"
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board Pixhawk6X
+          ./waf rover
+          ccache -s
+          ccache -z
+      - name: Archive ardurover Pixhawk6X firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: ardurover-Pixhawk6X
+          path: |
+            build/Pixhawk6X/bin/ardurover.apj
+            build/Pixhawk6X/bin/ardurover.bin
+            build/Pixhawk6X/bin/ardurover_with_bl.hex
+          retention-days: 30
+          if-no-files-found: error
